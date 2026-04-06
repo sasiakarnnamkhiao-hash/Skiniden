@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NONIOAEY - Skin Builder</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Mitr', 'sans-serif'],
+                    },
+                    colors: {
+                        theme: {
+                            bg: '#F8FAFC',    /* ขาวอมฟ้าอ่อนๆ (Background) */
+                            pink: '#FFB6C1',  /* ชมพูพาสเทล */
+                            blue: '#AEE2FF',  /* ฟ้าพาสเทล */
+                            text: '#334155',  /* สีกรมท่าอ่อนๆ สำหรับตัวอักษร */
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 25px -5px rgba(174, 226, 255, 0.4)',
+                        'card': '0 4px 20px -2px rgba(255, 182, 193, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #F8FAFC;
+            color: #334155;
+            overflow-x: hidden;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #F8FAFC; }
+        ::-webkit-scrollbar-thumb { background: #FFB6C1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #AEE2FF; }
+
+        /* Float Animations for decorations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+        @keyframes float-reverse {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(10px) rotate(-5deg); }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-float-reverse { animation: float-reverse 5s ease-in-out 1s infinite; }
+
+        /* ================== CSS ระบบจัดเรียงภาพ (ห้ามลบ/แก้) ================== */
+        #stage { 
+            width: 100%; 
+            padding: 20px 10px; 
+            display: flex; 
+            justify-content: center; 
+            overflow: visible;
+        }
+        
+        #collage {
+            display: grid;
+            grid-template-columns: repeat(var(--cols, 13), var(--cell-w, 120px));
+            grid-auto-rows: var(--cell-h, 170px);
+            background: transparent;
+            transform-origin: top center; 
+            width: var(--cw);
+            height: var(--ch);
+        }
+
+        .item {
+            position: relative;
+            width: var(--w, 150px);
+            height: var(--h, 210px); 
+            margin: 0; 
+            overflow: visible;
+            cursor: grab;
+            user-select: none; 
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        .item:active { cursor: grabbing; }
+        .item:hover { z-index: 99999 !important; transform: scale(1.1); }
+        
+        .item img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            pointer-events: none;
+            flex-shrink: 0;
+            object-fit: contain; 
+            object-position: center;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+        }
+
+        .del {
+            position: absolute; top: -5px; right: -5px; background: #FF4D4D; color: white;
+            width: 24px; height: 24px; border-radius: 50%; font-size: 14px;
+            display: none; align-items: center; justify-content: center; z-index: 110; border: none; cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .item:hover .del { display: flex; }
+
+        /* หน้าจอโหลด */
+        #load { position: fixed; inset: 0; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(5px); z-index: 20000; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        /* ======================================================================= */
+    </style>
+</head>
+<body class="antialiased selection:bg-theme-blue selection:text-white relative">
+
+    <svg width="0" height="0" class="hidden absolute pointer-events-none">
+        <symbol id="icon-heart-cute" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </symbol>
+        <symbol id="icon-star" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+        </symbol>
+    </svg>
+
+    <div class="max-w-3xl mx-auto min-h-screen bg-white sm:shadow-soft relative overflow-hidden flex flex-col">
+        
+        <div class="absolute inset-0 pointer-events-none z-0 overflow-hidden opacity-60">
+            <svg class="absolute top-[5%] left-[10%] w-8 h-8 text-theme-pink animate-float opacity-40" viewBox="0 0 24 24"><use href="#icon-heart-cute"></use></svg>
+            <svg class="absolute top-[15%] right-[15%] w-6 h-6 text-theme-blue animate-float-reverse opacity-50" viewBox="0 0 24 24"><use href="#icon-star"></use></svg>
+            <svg class="absolute top-[40%] left-[5%] w-10 h-10 text-theme-blue animate-float opacity-30" viewBox="0 0 24 24"><use href="#icon-heart-cute"></use></svg>
+            <svg class="absolute top-[60%] right-[5%] w-8 h-8 text-theme-pink animate-float-reverse opacity-40" viewBox="0 0 24 24"><use href="#icon-star"></use></svg>
+            <svg class="absolute top-[80%] left-[20%] w-6 h-6 text-theme-pink animate-float opacity-50" viewBox="0 0 24 24"><use href="#icon-heart-cute"></use></svg>
+        </div>
+
+        <header class="bg-gradient-to-br from-theme-pink/30 via-white to-theme-blue/30 pt-12 pb-10 px-6 relative rounded-b-[40px] shadow-sm z-10 border-b-4 border-white text-center">
+            <div class="inline-flex items-center justify-center gap-3 bg-white/60 backdrop-blur-sm px-6 py-3 rounded-full border-2 border-white shadow-card relative">
+                <i data-lucide="sparkles" class="w-5 h-5 text-theme-blue"></i>
+                <h1 class="text-3xl md:text-4xl font-bold tracking-widest text-theme-text uppercase relative z-10">
+                    NONIOAEY
+                </h1>
+                <i data-lucide="sparkles" class="w-5 h-5 text-theme-pink"></i>
+            </div>
+            <p class="mt-3 text-sm text-slate-500 font-medium">โปรแกรมจัดเรียงสกินสุดน่ารัก สร้างกรอบได้ดั่งใจ 🎨</p>
+        </header>
+
+        <main class="flex-1 px-4 sm:px-6 py-8 space-y-8 relative z-10">
+
+            <section class="bg-white rounded-[30px] p-6 shadow-card border-2 border-theme-blue/20 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-theme-pink to-theme-blue"></div>
+                
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-theme-text">
+                    <i data-lucide="settings-2" class="w-5 h-5 text-theme-blue"></i>
+                    ตั้งค่าการจัดวาง
+                </h2>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">สกินต่อแถว</label>
+                        <input type="number" id="cols" value="13" min="1" class="bg-theme-bg border-2 border-slate-100 rounded-xl px-3 py-2 text-center font-medium text-theme-text focus:outline-none focus:border-theme-blue focus:ring-2 focus:ring-theme-blue/20 transition-all">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">ขนาดรูป (px)</label>
+                        <input type="number" id="w" value="150" class="bg-theme-bg border-2 border-slate-100 rounded-xl px-3 py-2 text-center font-medium text-theme-text focus:outline-none focus:border-theme-blue focus:ring-2 focus:ring-theme-blue/20 transition-all">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">ซ้อนซ้าย-ขวา</label>
+                        <input type="number" id="mx" value="-30" class="bg-theme-bg border-2 border-slate-100 rounded-xl px-3 py-2 text-center font-medium text-theme-text focus:outline-none focus:border-theme-blue focus:ring-2 focus:ring-theme-blue/20 transition-all">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">ซ้อนบน-ล่าง</label>
+                        <input type="number" id="my" value="-40" class="bg-theme-bg border-2 border-slate-100 rounded-xl px-3 py-2 text-center font-medium text-theme-text focus:outline-none focus:border-theme-blue focus:ring-2 focus:ring-theme-blue/20 transition-all">
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button class="flex-1 bg-gradient-to-r from-theme-blue to-[#86CFF6] hover:from-[#86CFF6] hover:to-theme-blue text-white py-3 px-4 rounded-2xl font-semibold shadow-[0_8px_15px_-5px_rgba(174,226,255,0.6)] transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2" onclick="document.getElementById('file').click()">
+                        <i data-lucide="image-plus" class="w-5 h-5"></i> เพิ่มรูปภาพสกิน
+                    </button>
+                    <button class="flex-1 bg-gradient-to-r from-theme-pink to-[#FF9EAE] hover:from-[#FF9EAE] hover:to-theme-pink text-white py-3 px-4 rounded-2xl font-semibold shadow-[0_8px_15px_-5px_rgba(255,182,193,0.6)] transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2" onclick="save()">
+                        <i data-lucide="download" class="w-5 h-5"></i> ดาวน์โหลดรูปภาพ
+                    </button>
+                    <input type="file" id="file" multiple accept="image/*" class="hidden">
+                </div>
+            </section>
+
+            <section class="bg-theme-bg/50 rounded-[30px] border-2 border-dashed border-theme-pink/50 relative overflow-hidden min-h-[300px]">
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30">
+                    <div class="text-center">
+                        <i data-lucide="images" class="w-16 h-16 mx-auto mb-2 text-slate-300"></i>
+                        <span class="text-slate-400 font-medium">พื้นที่จัดเรียงสกิน</span>
+                    </div>
+                </div>
+                <div id="stage"><div id="collage"></div></div>
+            </section>
+
+            <section class="bg-white rounded-[30px] p-6 shadow-card border-2 border-theme-pink/20">
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-theme-text">
+                    <i data-lucide="book-heart" class="w-5 h-5 text-theme-pink"></i>
+                    วิธีใช้งาน
+                </h2>
+                <div class="space-y-4">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-theme-blue/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <i data-lucide="mouse-pointer-click" class="w-4 h-4 text-theme-blue"></i>
+                        </div>
+                        <p class="text-sm text-slate-600 leading-relaxed pt-1">
+                            <span class="font-semibold text-theme-text">ปรับแต่ง & เพิ่มรูป:</span> กดปุ่มเพิ่มรูปภาพ ปรับจำนวนรูปในแต่ละแถว และปรับความชิดซ้าย-ขวา บน-ล่างได้ตามใจต้องการ
+                        </p>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-theme-pink/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <i data-lucide="move" class="w-4 h-4 text-theme-pink"></i>
+                        </div>
+                        <p class="text-sm text-slate-600 leading-relaxed pt-1">
+                            <span class="font-semibold text-theme-text">จัดเรียงตำแหน่ง:</span> กดค้างที่รูปภาพที่ต้องการแล้วลากเพื่อย้ายตำแหน่งแก้ไข หรือกด (X) สีแดงมุมขวาบนเพื่อลบรูปนั้นทิ้ง
+                        </p>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mt-0.5">
+                            <i data-lucide="download-cloud" class="w-4 h-4 text-slate-500"></i>
+                        </div>
+                        <p class="text-sm text-slate-600 leading-relaxed pt-1">
+                            <span class="font-semibold text-theme-text">บันทึกผลงาน:</span> จัดจนพอใจแล้ว กดปุ่ม "ดาวน์โหลดรูปภาพ" ระบบจะเซฟภาพพื้นหลังใส (PNG) เข้าเครื่องทันที
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="bg-gradient-to-t from-theme-blue/10 to-transparent pt-8 pb-10 px-6 mt-4 relative text-center">
+            <h2 class="text-sm font-bold mb-4 tracking-wider text-theme-text flex items-center justify-center gap-2 uppercase">
+               CONTACT US <i data-lucide="heart" class="w-4 h-4 text-theme-pink fill-theme-pink"></i>
+            </h2>
+            
+            <div class="flex justify-center mb-6">
+                <a href="https://www.facebook.com/share/18HxcX4BXr/?mibextid=wwXIfr" target="_blank" class="w-full max-w-[200px] bg-gradient-to-r from-[#1877F2] to-[#1460C4] text-white py-3.5 rounded-full text-[13px] font-bold tracking-wider hover:-translate-y-1 hover:shadow-lg transition-all shadow-md flex justify-center items-center gap-2 uppercase">
+                    <i data-lucide="facebook" class="w-4 h-4"></i> FACEBOOK
+                </a>
+            </div>
+            
+            <p class="text-xs font-medium text-slate-400 flex items-center justify-center gap-1.5 italic">
+                Created by NONIOAEY <i data-lucide="star" class="w-3.5 h-3.5 text-theme-blue fill-theme-blue opacity-80"></i>
+            </p>
+        </footer>
+
+        <div id="load">
+            <i data-lucide="loader-2" class="w-10 h-10 text-theme-pink animate-spin mb-3"></i>
+            <div class="font-medium text-theme-text bg-white px-4 py-1.5 rounded-full shadow-sm border border-slate-100">กำลังประมวลผลรูปภาพ... 🌸</div>
+        </div>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+
+    <script>
+        const collage = document.getElementById('collage');
+        const stage = document.getElementById('stage');
+        const load = document.getElementById('load');
+
+        function updateZ() {
+            const items = document.querySelectorAll('.item');
+            let cols = Math.max(1, parseInt(document.getElementById('cols').value) || 1);
+            
+            items.forEach((item, i) => {
+                let row = Math.floor(i / cols);
+                let col = i % cols;             
+                let zVal = (row * 1000) + (cols - col);
+                item.style.zIndex = zVal; 
+            });
+        }
+
+        async function crop(file) {
+            return new Promise(res => {
+                const img = new Image();
+                img.src = URL.createObjectURL(file);
+                img.onload = () => {
+                    const cvs = document.createElement('canvas');
+                    const ctx = cvs.getContext('2d', {willReadFrequently:true});
+                    cvs.width = img.width; cvs.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    const data = ctx.getImageData(0,0,cvs.width,cvs.height).data;
+                    let t=cvs.height, b=0, l=cvs.width, r=0, found=false;
+                    for(let y=0; y<cvs.height; y++) {
+                        for(let x=0; x<cvs.width; x++) {
+                            if(data[(y*cvs.width+x)*4+3] > 20) {
+                                t=Math.min(t,y); b=Math.max(b,y); l=Math.min(l,x); r=Math.max(r,x); found=true;
+                            }
+                        }
+                    }
+                    if(!found) { res(img.src); return; }
+                    const cCvs = document.createElement('canvas');
+                    cCvs.width = r-l+1; cCvs.height = b-t+1;
+                    cCvs.getContext('2d').drawImage(img, l, t, cCvs.width, cCvs.height, 0, 0, cCvs.width, cCvs.height);
+                    res(cCvs.toDataURL());
+                    URL.revokeObjectURL(img.src);
+                };
+            });
+        }
+
+        function refresh() {
+            let cols = Math.max(1, parseInt(document.getElementById('cols').value) || 1);
+            let w = parseFloat(document.getElementById('w').value) || 150;
+            let mx = parseFloat(document.getElementById('mx').value) || 0;
+            let my = parseFloat(document.getElementById('my').value) || 0;
+            let h = w * 1.4;
+
+            collage.style.setProperty('--cols', cols);
+            collage.style.setProperty('--w', w + 'px');
+            collage.style.setProperty('--h', h + 'px');
+            collage.style.setProperty('--cell-w', (w + mx) + 'px');
+            collage.style.setProperty('--cell-h', (h + my) + 'px');
+
+            let totalItems = document.querySelectorAll('.item').length;
+            let rows = Math.ceil(totalItems / cols);
+
+            if (totalItems > 0) {
+                let exactWidth = w + ((cols - 1) * (w + mx)); 
+                let exactHeight = h + ((rows - 1) * (h + my));
+                
+                collage.style.setProperty('--cw', exactWidth + 'px');
+                collage.style.setProperty('--ch', exactHeight + 'px');
+
+                let availableWidth = window.innerWidth - 40; // เผื่อขอบสำหรับ Theme ใหม่
+                
+                if (exactWidth > availableWidth && exactWidth > 0) {
+                    let scaleRatio = availableWidth / exactWidth;
+                    collage.style.transform = `scale(${scaleRatio})`;
+                    stage.style.height = (exactHeight * scaleRatio + 100) + 'px'; 
+                } else {
+                    collage.style.transform = 'none';
+                    stage.style.height = exactHeight + 100 + 'px'; 
+                }
+            } else {
+                collage.style.setProperty('--cw', 'auto');
+                collage.style.setProperty('--ch', 'auto');
+                collage.style.transform = 'none';
+                stage.style.height = 'auto'; 
+            }
+
+            updateZ(); 
+        }
+
+        ['cols','w','mx','my'].forEach(id => document.getElementById(id).oninput = refresh);
+        window.addEventListener('resize', refresh); 
+
+        document.getElementById('file').onchange = async (e) => {
+            const files = Array.from(e.target.files);
+            if(!files.length) return;
+            load.style.display = 'flex';
+            for(let f of files) {
+                const url = await crop(f);
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `<button class="del" onclick="this.parentElement.remove(); refresh();"><i data-lucide="x" class="w-3 h-3"></i></button><img src="${url}">`;
+                collage.appendChild(div);
+                lucide.createIcons(); // โหลดไอคอน X ตอนเพิ่มรูป
+            }
+            load.style.display = 'none';
+            refresh();
+            e.target.value = ''; 
+        };
+
+        new Sortable(collage, { 
+            animation: 150, 
+            delay: 200, 
+            delayOnTouchOnly: true, 
+            touchStartThreshold: 5, 
+            onSort: refresh 
+        }); 
+
+        async function save() {
+            if(!collage.children.length) return;
+            load.style.display = 'flex';
+            
+            document.querySelectorAll('.del').forEach(b => b.style.display = 'none');
+            
+            collage.style.transform = 'none';
+            
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            const cvs = await html2canvas(collage, { 
+                scale: 2, 
+                backgroundColor: null,
+                useCORS: true
+            });
+            
+            const a = document.createElement('a');
+            a.download = `Skins-NONIOAEY.png`;
+            a.href = cvs.toDataURL();
+            a.click();
+            
+            document.querySelectorAll('.del').forEach(b => b.style.display = '');
+            refresh(); 
+            load.style.display = 'none';
+        }
+        
+        refresh();
+    </script>
+</body>
+</html>
